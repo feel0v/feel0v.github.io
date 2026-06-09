@@ -3,10 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>feel0v — glass bio</title>
+<title>feel0v</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+/* ============ EPILEPSY WARNING OVERLAY ============ */
+.warning-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+}
 
+.warning-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.warning-box {
+    text-align: center;
+    padding: 40px 30px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    max-width: 420px;
+    width: 90%;
+}
+
+.warning-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    animation: warningPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+}
+
+.warning-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.warning-subtitle {
+    font-size: 11px;
+    font-weight: 300;
+    opacity: 0.5;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.warning-btn {
+    padding: 12px 32px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.warning-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.warning-btn:active {
+    transform: scale(0.95);
+}
 <style>
 * {
     margin: 0;
@@ -26,7 +110,15 @@ body {
     -moz-osx-font-smoothing: grayscale;
     cursor: crosshair;
 }
-
+<!-- EPILEPSY WARNING -->
+<div class="warning-overlay" id="warningOverlay">
+    <div class="warning-box">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-title">EPILEPSY WARNING</div>
+        <div class="warning-subtitle">шёдер содержит быстрые<br>мигающие паттерны и цвета</div>
+        <button class="warning-btn" id="warningBtn">всё равно зайти</button>
+    </div>
+</div>
 #shaderCanvas {
     position: fixed;
     inset: 0;
@@ -521,12 +613,12 @@ body {
             <img class="avatar" src="avatar.jpg" alt="feel0v" onerror="this.style.display='none'; this.parentElement.style.display='none';">
         </div>
         <div class="username">feel0v</div>
-        <div class="bio-tag">glass bio</div>
+        <div class="bio-tag">ds:incassatorswag</div>
     </div>
 
     <div class="status-row">
         <div class="status-dot"></div>
-        <span class="status-text">в сети</span>
+        <span class="status-text">sleep</span>
     </div>
 
     <div class="divider"></div>
@@ -844,6 +936,11 @@ document.onkeydown = e => {
     if(e.code === 'Space' && e.target === document.body) { e.preventDefault(); toggle(); }
 };
 </script>
+const warningOverlay = document.getElementById('warningOverlay');
+const warningBtn = document.getElementById('warningBtn');
 
+warningBtn.onclick = () => {
+    warningOverlay.classList.add('hidden');
+};
 </body>
 </html>
