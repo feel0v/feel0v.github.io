@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>feel0v — glass bio</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Unbounded', system-ui, sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: #0a0a0f;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: crosshair;
+}
+
+#shaderCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.player-card {
+    position: relative;
+    z-index: 1;
+    width: 380px;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 28px 24px 20px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(50px) saturate(200%);
+    -webkit-backdrop-filter: blur(50px) saturate(200%);
+    box-shadow:
+        0 8px 40px rgba(0, 0, 0, 0.5),
+        0 0 80px rgba(120, 120, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    color: white;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+.player-card::-webkit-scrollbar { width: 3px; }
+.player-card::-webkit-scrollbar-track { background: transparent; margin: 20px 0; }
+.player-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+.player-card::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4) 20%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.4) 80%, transparent);
+    border-radius: 24px 24px 0 0;
+    z-index: 2; pointer-events: none;
+}
+
+.player-card::after {
+    content: '';
+    position: absolute;
+    top: -100px; left: -50px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(180,180,255,0.15), transparent 70%);
+    pointer-events: none;
+    border-radius: 50%; filter: blur(20px);
+    z-index: 0;
+}
+
+.avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+}
+
+.avatar-ring {
+    position: relative;
+    width: 100px; height: 100px;
+    margin-bottom: 14px;
+}
+
+.avatar-ring::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(180,180,255,0.3), rgba(255,255,255,0.1), rgba(180,180,255,0.2));
+    animation: ringRotate 8s linear infinite;
+    filter: blur(1px);
+}
+
+@keyframes ringRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.avatar-ring::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: ringPulse 3s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+    0%, 100% { transform: scale(1); opacity: 0.3; }
+    50% { transform: scale(1.05); opacity: 0.6; }
+}
+
+.avatar {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,0.15);
+    position: relative; z-index: 1;
+    backdrop-filter: blur(10px);
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.1);
+}
+
+.avatar:hover {
+    transform: scale(1.05);
+    border-color: rgba(255,255,255,0.3);
+    box-shadow: 0 8px 30px rgba(120,120,255,0.2), 0 0 60px rgba(180,180,255,0.1), inset 0 0 20px rgba(0,0,0,0.1);
+}
+
+.username {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(255,255,255,0.4));
+    margin-bottom: 2px;
+    transition: all 0.3s ease;
+}
+
+.username:hover {
+    filter: drop-shadow(0 0 30px rgba(200,200,255,0.6));
+}
+
+.bio-tag {
+    font-size: 10px;
+    font-weight: 300;
+    opacity: 0.5;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #6f6;
+    box-shadow: 0 0 10px rgba(100,255,100,0.6), 0 0 20px rgba(100,255,100,0.3);
+    animation: statusGlow 2s ease-in-out infinite;
+}
+
+@keyframes statusGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(100,255,100,0.6), 0 0 20px rgba(100,255,100,0.3); }
+    50% { box-shadow: 0 0 15px rgba(100,255,100,0.9), 0 0 30px rgba(100,255,100,0.5); }
+}
+
+.status-text {
+    font-size: 10px;
+    font-weight: 300;
+    opacity: 0.5;
+    letter-spacing: 0.5px;
+}
+
+.divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.1) 80%, transparent);
+    margin: 12px 0;
+}
+
+.music-section { position: relative; z-index: 1; }
+
+.music-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    user-select: none;
+}
+
+.music-header:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.14);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.music-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.music-icon { opacity: 0.6; transition: all 0.3s; }
+.music-icon svg { width: 16px; height: 16px; fill: white; }
+.music-header:hover .music-icon { opacity: 1; filter: drop-shadow(0 0 8px rgba(255,255,255,0.3)); }
+
+.music-label {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+    transition: opacity 0.3s;
+}
+.music-header:hover .music-label { opacity: 1; }
+
+.music-arrow { opacity: 0.4; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
+.music-arrow svg { width: 14px; height: 14px; fill: white; }
+.music-arrow.open { transform: rotate(180deg); opacity: 0.8; }
+
+.music-player {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1), margin 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.music-player.open { max-height: 500px; opacity: 1; margin-top: 10px; }
+
+.music-player-inner {
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.mini-track-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
+.mini-track-art {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+
+.mini-track-art-inner {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    transition: all 0.3s ease;
+}
+
+.mini-track-art-inner.playing {
+    animation: miniPulse 2s ease-in-out infinite;
+    background: rgba(255,255,255,0.25);
+}
+
+@keyframes miniPulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 1; }
+}
+
+.mini-track-name {
+    font-size: 10px; font-weight: 300;
+    opacity: 0.7;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex: 1;
+}
+
+.progress-container { margin: 8px 0; }
+
+.progress-bar {
+    width: 100%; height: 2px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 1px;
+    cursor: pointer;
+    position: relative; overflow: visible;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0.4), rgba(255,255,255,0.8));
+    border-radius: 1px;
+    width: 0%;
+    transition: width 0.1s linear;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 50%;
+    transform: translateY(-50%);
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 0 8px rgba(255,255,255,0.6);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.progress-bar:hover .progress-fill::after { opacity: 1; }
+
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 8px; font-weight: 300;
+    opacity: 0.35;
+    letter-spacing: 0.3px;
+}
+
+.controls { display: flex; justify-content: center; align-items: center; gap: 16px; margin: 10px 0 8px; }
+
+.btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    position: relative; overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.btn:hover { transform: scale(1.1); background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.18); box-shadow: 0 0 15px rgba(255,255,255,0.08); }
+.btn:hover::before { opacity: 1; }
+.btn:active { transform: scale(0.95); }
+
+.btn svg { fill: white; width: 14px; height: 14px; position: relative; z-index: 1; }
+
+.btn-main { padding: 12px; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
+.btn-main svg { width: 18px; height: 18px; }
+
+.volume-row { display: flex; align-items: center; gap: 8px; }
+
+.volume-icon { opacity: 0.4; cursor: pointer; transition: opacity 0.3s; flex-shrink: 0; }
+.volume-icon:hover { opacity: 0.8; }
+.volume-icon svg { width: 12px; height: 12px; fill: white; }
+
+.volume-slider {
+    flex: 1; height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.volume-slider:hover { height: 4px; }
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(255,255,255,0.4);
+    transition: all 0.3s;
+}
+
+.volume-slider:hover::-webkit-slider-thumb {
+    width: 12px; height: 12px;
+    box-shadow: 0 0 15px rgba(255,255,255,0.6);
+}
+
+.playlist {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.playlist::-webkit-scrollbar { width: 2px; }
+.playlist::-webkit-scrollbar-track { background: transparent; }
+.playlist::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 1px; }
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    font-size: 9px; font-weight: 300;
+    color: rgba(255,255,255,0.5);
+}
+
+.playlist-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+.playlist-item.active { background: rgba(255,255,255,0.08); color: white; }
+
+.playlist-item.active::before {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 0 6px rgba(255,255,255,0.6);
+    flex-shrink: 0;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(255,255,255,0.6); }
+    50% { box-shadow: 0 0 12px rgba(255,255,255,1); }
+}
+
+.playlist-item-number { opacity: 0.3; font-size: 8px; font-weight: 300; width: 14px; flex-shrink: 0; }
+.playlist-item-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.telegram-section { margin-top: 12px; position: relative; z-index: 1; }
+
+.telegram-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    text-decoration: none;
+    color: white;
+    font-size: 12px; font-weight: 400;
+    letter-spacing: 0.4px;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    position: relative; overflow: hidden;
+}
+
+.telegram-link::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(100,150,255,0.1), transparent 50%, rgba(100,150,255,0.05));
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.telegram-link:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+.telegram-link:hover::before { opacity: 1; }
+
+.telegram-link svg { width: 18px; height: 18px; fill: white; opacity: 0.7; transition: all 0.3s; }
+.telegram-link:hover svg { opacity: 1; filter: drop-shadow(0 0 8px rgba(150,200,255,0.5)); }
+
+.telegram-arrow {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.3s;
+    font-size: 12px; font-weight: 300;
+}
+.telegram-link:hover .telegram-arrow { opacity: 0.6; transform: translateX(0); }
+
+.hidden { display: none !important; }
+
+@media (max-width: 420px) {
+    .player-card { width: 92vw; padding: 20px 16px 16px; border-radius: 20px; }
+    .username { font-size: 24px; }
+    .avatar-ring { width: 80px; height: 80px; }
+    .avatar { width: 80px; height: 80px; }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="shaderCanvas"></canvas>
+
+<div class="player-card">
+    <div class="avatar-section">
+        <div class="avatar-ring">
+            <img class="avatar" src="avatar.jpg" alt="feel0v" onerror="this.style.display='none'; this.parentElement.style.display='none';">
+        </div>
+        <div class="username">feel0v</div>
+        <div class="bio-tag">glass bio</div>
+    </div>
+
+    <div class="status-row">
+        <div class="status-dot"></div>
+        <span class="status-text">в сети</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="music-section">
+        <div class="music-header" id="musicToggle">
+            <div class="music-header-left">
+                <div class="music-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                </div>
+                <span class="music-label">музыка</span>
+            </div>
+            <div class="music-arrow" id="musicArrow">
+                <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+            </div>
+        </div>
+
+        <div class="music-player" id="musicPlayer">
+            <div class="music-player-inner">
+                <audio id="audio" preload="auto"></audio>
+
+                <div class="mini-track-info">
+                    <div class="mini-track-art">
+                        <div class="mini-track-art-inner" id="miniTrackArtInner"></div>
+                    </div>
+                    <div class="mini-track-name" id="trackTitle">Выберите трек</div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="duration">0:00</span>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn" id="prev">
+                        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 18V6z"/></svg>
+                    </button>
+                    <button class="btn btn-main" id="play">
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button class="btn btn-main hidden" id="pause">
+                        <svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+                    </button>
+                    <button class="btn" id="next">
+                        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"/></svg>
+                    </button>
+                </div>
+
+                <div class="volume-row">
+                    <div class="volume-icon" id="volumeIcon">
+                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+                    </div>
+                    <input class="volume-slider" id="vol" type="range" min="0" max="1" step="0.01" value="0.7">
+                </div>
+
+                <div class="playlist" id="playlist"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="telegram-section">
+        <a class="telegram-link" href="https://t.me/iiveriya" target="_blank">
+            <svg viewBox="0 0 24 24"><path d="M9.04 15.47l-.39 3.87c.56 0 .81-.24 1.11-.53l2.64-2.52 5.47 4c1 .56 1.7.27 1.96-.9L22.6 4.6c.33-1.31-.47-1.82-1.43-1.45L1.7 10.3c-1.28.5-1.26 1.2-.23 1.5l4.86 1.52L17.8 7.1c.6-.36 1.15-.16.7.2"/></svg>
+            Telegram
+            <span class="telegram-arrow">→</span>
+        </a>
+    </div>
+</div>
+
+<script>
+// ============ WEBGL SHADER ============
+const canvas = document.getElementById('shaderCanvas');
+const gl = canvas.getContext('webgl', { antialias: true });
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
+resize();
+window.addEventListener('resize', resize);
+
+const vertSrc = `
+    attribute vec4 position;
+    void main() {
+        gl_Position = position;
+    }
+`;
+
+const fragSrc = `
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+
+    uniform float time;
+    uniform vec2 mouse;
+    uniform vec2 resolution;
+
+    #define N 40
+    #define PI2 (3.14159265*2.0)
+
+    void main( void ) {
+        vec2 v = (gl_FragCoord.xy - resolution/2.0) / min(resolution.y,resolution.x) * 15.0;
+
+        float t = time * 888.0;
+        float factor = mouse.x * 3.0;
+        float c = cos(mouse.y * PI2);
+        float s = sin(mouse.y * PI2);
+
+        for ( int i = 1; i <= N; i++ ){
+            float d = float(i+3) / float(N);
+            float x = v.x;
+            float y = v.y + sin(v.x * d * 3.0 + t)/d*factor + cos(v.x * d + t)/d*factor;
+
+            v.x = x * c - y * s;
+            v.y = x * s + y * c;
+        }
+        float col = length(v)*0.25;
+        gl_FragColor = vec4( cos(col), cos(col*2.0), cos(col*4.0), 1.0 );
+    }
+`;
+
+function makeShader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+}
+
+const prog = gl.createProgram();
+gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, vertSrc));
+gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, fragSrc));
+gl.linkProgram(prog);
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+
+const posLoc = gl.getAttribLocation(prog, 'position');
+const resLoc = gl.getUniformLocation(prog, 'resolution');
+const timeLoc = gl.getUniformLocation(prog, 'time');
+const mouseLoc = gl.getUniformLocation(prog, 'mouse');
+
+let mx = 0.5, my = 0.5, tmx = 0.5, tmy = 0.5;
+let lastMove = Date.now();
+let autoT = 0;
+
+document.addEventListener('mousemove', e => {
+    tmx = e.clientX / innerWidth;
+    tmy = 1 - e.clientY / innerHeight;
+    lastMove = Date.now();
+});
+document.addEventListener('touchmove', e => {
+    tmx = e.touches[0].clientX / innerWidth;
+    tmy = 1 - e.touches[0].clientY / innerHeight;
+    lastMove = Date.now();
+}, { passive: true });
+
+let start = Date.now();
+
+function loop() {
+    const t = (Date.now() - start) * 0.001;
+    autoT += 0.003;
+
+    if ((Date.now() - lastMove) * 0.001 > 2) {
+        tmx = 0.5 + Math.sin(autoT*0.7)*0.3 + Math.cos(autoT*0.3)*0.2;
+        tmy = 0.5 + Math.cos(autoT*0.5)*0.3 + Math.sin(autoT*0.4)*0.2;
+    }
+
+    mx += (tmx - mx) * 0.04;
+    my += (tmy - my) * 0.04;
+
+    gl.useProgram(prog);
+    gl.uniform2f(resLoc, canvas.width, canvas.height);
+    gl.uniform1f(timeLoc, t);
+    gl.uniform2f(mouseLoc, mx, my);
+
+    gl.enableVertexAttribArray(posLoc);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    requestAnimationFrame(loop);
+}
+loop();
+
+// ============ MUSIC TOGGLE ============
+const musicToggle = document.getElementById('musicToggle');
+const musicPlayer = document.getElementById('musicPlayer');
+const musicArrow = document.getElementById('musicArrow');
+let open = false;
+
+musicToggle.onclick = () => {
+    open = !open;
+    musicPlayer.classList.toggle('open', open);
+    musicArrow.classList.toggle('open', open);
+};
+
+// ============ AUDIO ============
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('play');
+const pauseBtn = document.getElementById('pause');
+const volSlider = document.getElementById('vol');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const curTimeEl = document.getElementById('currentTime');
+const durEl = document.getElementById('duration');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const trackTitle = document.getElementById('trackTitle');
+const artInner = document.getElementById('miniTrackArtInner');
+const playlistEl = document.getElementById('playlist');
+const volIcon = document.getElementById('volumeIcon');
+
+const tracks = [
+    { title: "Current Joys — New Flesh", file: "tracks/Current Joys New Flesh.m4a" },
+    { title: "gnoy", file: "tracks/gnoy.m4a" },
+    { title: "Chalice of the Mind x Hardbass", file: "tracks/Chalice of the Mind x Hardbass.m4a" },
+    { title: "aaron g — Not anywhere", file: "tracks/aaron g Not anywhere music video.m4a" },
+    { title: "bedrott", file: "tracks/bedrott.m4a" },
+    { title: "beatles", file: "tracks/beatles.m4a" },
+    { title: "upast", file: "tracks/upast.m4a" },
+    { title: "konec", file: "tracks/konec.m4a" },
+    { title: "navalny", file: "tracks/navalny.m4a" },
+    { title: "lamour", file: "tracks/lamour.m4a" },
+    { title: "vanished", file: "tracks/vanished.mp3" }
+];
+
+let idx = 0, playing = false;
+
+function buildList() {
+    playlistEl.innerHTML = '';
+    tracks.forEach((t, i) => {
+        const el = document.createElement('div');
+        el.className = 'playlist-item' + (i === idx ? ' active' : '');
+        el.innerHTML = `<span class="playlist-item-number">${(i+1).toString().padStart(2,'0')}</span><span class="playlist-item-title">${t.title}</span>`;
+        el.onclick = () => { load(i); if(!playing) toggle(); };
+        playlistEl.appendChild(el);
+    });
+}
+
+function updActive() {
+    playlistEl.querySelectorAll('.playlist-item').forEach((el, i) => el.classList.toggle('active', i === idx));
+}
+
+function load(i) {
+    idx = i;
+    audio.src = tracks[i].file;
+    trackTitle.textContent = tracks[i].title;
+    updActive();
+    if(playing) audio.play().catch(()=>{});
+}
+
+function toggle() {
+    if(playing) {
+        audio.pause();
+        playing = false;
+        playBtn.classList.remove('hidden');
+        pauseBtn.classList.add('hidden');
+        artInner.classList.remove('playing');
+    } else {
+        audio.play().catch(()=>{});
+        playing = true;
+        playBtn.classList.add('hidden');
+        pauseBtn.classList.remove('hidden');
+        artInner.classList.add('playing');
+    }
+}
+
+load(0);
+buildList();
+
+playBtn.onclick = toggle;
+pauseBtn.onclick = toggle;
+
+prevBtn.onclick = () => { idx = (idx-1+tracks.length)%tracks.length; load(idx); if(!playing) toggle(); };
+nextBtn.onclick = () => { idx = (idx+1)%tracks.length; load(idx); if(!playing) toggle(); };
+
+audio.onended = () => { idx = (idx+1)%tracks.length; load(idx); if(!playing) toggle(); };
+
+volSlider.oninput = e => audio.volume = e.target.value;
+
+let lastVol = 0.7;
+volIcon.onclick = () => {
+    if(audio.volume > 0) { lastVol = audio.volume; audio.volume = 0; volSlider.value = 0; }
+    else { audio.volume = lastVol; volSlider.value = lastVol; }
+};
+
+audio.ontimeupdate = () => {
+    if(!audio.duration) return;
+    progressFill.style.width = (audio.currentTime/audio.duration*100) + '%';
+    const m = Math.floor(audio.currentTime/60);
+    const s = Math.floor(audio.currentTime%60);
+    curTimeEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+};
+
+audio.onloadedmetadata = () => {
+    const m = Math.floor(audio.duration/60);
+    const s = Math.floor(audio.duration%60);
+    durEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+};
+
+progressBar.onclick = e => {
+    audio.currentTime = ((e.clientX - progressBar.getBoundingClientRect().left) / progressBar.offsetWidth) * audio.duration;
+};
+
+document.onkeydown = e => {
+    if(e.code === 'Space' && e.target === document.body) { e.preventDefault(); toggle(); }
+};
+</script>
+
+</body>
+</html>
