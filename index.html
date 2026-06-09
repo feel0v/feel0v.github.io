@@ -6,7 +6,27 @@
 <title>feel0v</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-/* ============ EPILEPSY WARNING OVERLAY ============ */
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Unbounded', system-ui, sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: #0a0a0f;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: crosshair;
+}
+
 .warning-overlay {
     position: fixed;
     inset: 0;
@@ -91,34 +111,7 @@
 .warning-btn:active {
     transform: scale(0.95);
 }
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Unbounded', system-ui, sans-serif;
-}
 
-body {
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    background: #0a0a0f;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    cursor: crosshair;
-}
-<!-- EPILEPSY WARNING -->
-<div class="warning-overlay" id="warningOverlay">
-    <div class="warning-box">
-        <div class="warning-icon">⚠️</div>
-        <div class="warning-title">EPILEPSY WARNING</div>
-        <div class="warning-subtitle">шёдер содержит быстрые<br>мигающие паттерны и цвета</div>
-        <button class="warning-btn" id="warningBtn">всё равно зайти</button>
-    </div>
-</div>
 #shaderCanvas {
     position: fixed;
     inset: 0;
@@ -140,11 +133,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(50px) saturate(200%);
     -webkit-backdrop-filter: blur(50px) saturate(200%);
-    box-shadow:
-        0 8px 40px rgba(0, 0, 0, 0.5),
-        0 0 80px rgba(120, 120, 255, 0.05),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(120, 120, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
     color: white;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.08) transparent;
@@ -317,23 +306,12 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.music-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
+.music-header-left { display: flex; align-items: center; gap: 10px; }
 .music-icon { opacity: 0.6; transition: all 0.3s; }
 .music-icon svg { width: 16px; height: 16px; fill: white; }
 .music-header:hover .music-icon { opacity: 1; filter: drop-shadow(0 0 8px rgba(255,255,255,0.3)); }
 
-.music-label {
-    font-size: 11px;
-    font-weight: 400;
-    opacity: 0.7;
-    letter-spacing: 0.5px;
-    transition: opacity 0.3s;
-}
+.music-label { font-size: 11px; font-weight: 400; opacity: 0.7; letter-spacing: 0.5px; transition: opacity 0.3s; }
 .music-header:hover .music-label { opacity: 1; }
 
 .music-arrow { opacity: 0.4; transition: all 0.4s cubic-bezier(0.4,0,0.2,1); }
@@ -605,6 +583,15 @@ body {
 
 <body>
 
+<div class="warning-overlay" id="warningOverlay">
+    <div class="warning-box">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-title">EPILEPSY WARNING</div>
+        <div class="warning-subtitle">шёдер содержит быстрые<br>мигающие паттерны и цвета</div>
+        <button class="warning-btn" id="warningBtn">всё равно зайти</button>
+    </div>
+</div>
+
 <canvas id="shaderCanvas"></canvas>
 
 <div class="player-card">
@@ -696,7 +683,6 @@ body {
 </div>
 
 <script>
-// ============ WEBGL SHADER ============
 const canvas = document.getElementById('shaderCanvas');
 const gl = canvas.getContext('webgl', { antialias: true });
 
@@ -812,7 +798,13 @@ function loop() {
 }
 loop();
 
-// ============ MUSIC TOGGLE ============
+const warningOverlay = document.getElementById('warningOverlay');
+const warningBtn = document.getElementById('warningBtn');
+
+warningBtn.onclick = () => {
+    warningOverlay.classList.add('hidden');
+};
+
 const musicToggle = document.getElementById('musicToggle');
 const musicPlayer = document.getElementById('musicPlayer');
 const musicArrow = document.getElementById('musicArrow');
@@ -824,7 +816,6 @@ musicToggle.onclick = () => {
     musicArrow.classList.toggle('open', open);
 };
 
-// ============ AUDIO ============
 const audio = document.getElementById('audio');
 const playBtn = document.getElementById('play');
 const pauseBtn = document.getElementById('pause');
@@ -936,11 +927,6 @@ document.onkeydown = e => {
     if(e.code === 'Space' && e.target === document.body) { e.preventDefault(); toggle(); }
 };
 </script>
-const warningOverlay = document.getElementById('warningOverlay');
-const warningBtn = document.getElementById('warningBtn');
 
-warningBtn.onclick = () => {
-    warningOverlay.classList.add('hidden');
-};
 </body>
 </html>
